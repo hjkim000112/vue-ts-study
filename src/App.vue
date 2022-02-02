@@ -8,7 +8,14 @@
     </main>
     <div>
       <ul>
-        <TodoListItem />
+        <TodoListItem 
+        v-for="(todoItem,index) in todoItems" 
+        :key="index"
+        :index="index"
+        :todoItem="todoItem"
+        @remove="removeTodoItem"
+        @toggle="toggleTodoItemComplete"
+        />
         <!-- <li>item 1</li>
         <li>item 2</li>
         <li>item 3</li> -->
@@ -23,34 +30,68 @@
 import TodoListItem from './components/TodoListItem.vue';
 const STORAGE_KEY = 'vue-todo-ts-v1';
 const storage = { //LocalStorage 
+  save(todoItems : any[] ){
+    const parsed = JSON.stringify(todoItems);
+    localStorage.setItem(STORAGE_KEY , parsed);
+  },
   fetch(){
-    const todoItems = localStorage.getItem(STORAGE_KEY) || [];
-    // const result = JSON.parse(todoItems);
-    //데이터 조회 API 설계부터 봐야함
-    // return result;
+    const todoItems = localStorage.getItem(STORAGE_KEY) || "[]";
+    const result = JSON.parse(todoItems); // type 에러 부분 
+    // 데이터 조회 API 설계부터 봐야함
+    return result;
   }
+}
+
+export interface Todo{ //객체를 위한 타입
+    title:string;
+    done: boolean;
 }
   export default Vue.extend({
     components:{TodoInput, TodoListItem},
     data(){
       return{
-        todoText:''
+        todoText:'',
+        todoItems:[] as Todo[]
       }
     },
     methods:{
       updateTodoText(value:string){
-        this.todoText=value;
+        this.todoText =value;
       }
       ,
       addTodoItem(){
         const value = this.todoText;
-        localStorage.setItem(value,value);
+        const todo:Todo ={
+          title:value,
+          done:false
+        }
+        this.todoItems.push(todo);
+        storage.save(this.todoItems);
+        // localStorage.setItem(value,value);
         this.initTodoText();
 
       },
       initTodoText(){
         this.todoText='';
+      },
+      fetchTodoItems(){
+       this.todoItems =  storage.fetch();
+      },
+      removeTodoItem(index:number){
+        this.todoItems.splice(index,1);
+        storage.save(this.todoItems);
+      },
+      toggleTodoItemComplete(todoItem:Todo,index:number){
+        this.todoItems.splice(index,1,{
+          ...todoItem, //todoItem 에 있는 값을 다 가져옴
+          // title: todoItem.title,
+          done: !todoItem.done //가져온 뒤 바꿔야하는 속성만 지정해서 바꿈
+        });
+        storage.save(this.todoItems);
       }
+    },
+    created(){
+      this.fetchTodoItems()
     }
   })
 </script>
